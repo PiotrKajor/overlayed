@@ -20,7 +20,13 @@ export const User = ({
 }) => {
   const { id, selfMuted, selfDeafened, talking, muted, deafened, avatarHash } = item;
 
-  const avatarUrl = avatarHash ? `https://cdn.discordapp.com/avatars/${id}/${avatarHash}.jpg` : "/img/default.png";
+  const { value: mcUserMap } = useConfigValue("mcUserMap");
+  const mcId = mcUserMap?.[id];
+
+  const discordAvatarUrl = avatarHash
+    ? `https://cdn.discordapp.com/avatars/${id}/${avatarHash}.jpg`
+    : "/img/default.png";
+  const avatarUrl = mcId ? `https://mc-heads.net/avatar/${mcId}/128` : discordAvatarUrl;
 
   const talkingClass = talking ? "border-green-500" : "border-zinc-800";
   const mutedClass = selfMuted || muted ? "text-zinc-400" : "";
@@ -91,10 +97,14 @@ export const User = ({
       <div className={`pointer-events-none relative rounded-full border-2 ${talkingClass}`}>
         <img
           onError={e => {
-            // @ts-expect-error need to fix this prolly
-            e.target.onerror = null;
-            // @ts-expect-error need to fix this prolly
-            e.target.src = "/img/default.png";
+            const img = e.currentTarget;
+            // mc-heads failed -> fall back to the discord avatar, then to the default image
+            if (mcId && avatarHash && !img.src.includes("cdn.discordapp.com")) {
+              img.src = discordAvatarUrl;
+            } else {
+              img.onerror = null;
+              img.src = "/img/default.png";
+            }
           }}
           src={avatarUrl}
           alt="avatar"

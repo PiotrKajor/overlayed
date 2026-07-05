@@ -2,8 +2,54 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import Config from "@/config";
 import { useConfigValue } from "@/hooks/use-config-value";
+import { parseUserMap } from "@/utils/parseUserMap";
 import { emit } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
+
+const McUserMapEditor = () => {
+  const { value: mcUserMap } = useConfigValue("mcUserMap");
+  const [text, setText] = useState("{}");
+  const [error, setError] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  // sync the initial value from config once, then leave the textarea alone while the user types
+  useEffect(() => {
+    if (!dirty) setText(JSON.stringify(mcUserMap ?? {}, null, 2));
+  }, [mcUserMap, dirty]);
+
+  return (
+    <div className="flex flex-col gap-1 mx-2 mt-2">
+      <label
+        htmlFor="mcUserMap"
+        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      >
+        Minecraft skin heads (Discord ID → UUID or username, JSON)
+      </label>
+      <textarea
+        id="mcUserMap"
+        rows={4}
+        spellCheck={false}
+        value={text}
+        placeholder='{"123456789012345678": "Notch"}'
+        onChange={async event => {
+          const newText = event.target.value;
+          setDirty(true);
+          setText(newText);
+
+          const parsed = parseUserMap(newText);
+          setError(parsed === null);
+          if (parsed === null) return;
+
+          await Config.set("mcUserMap", parsed);
+          await emit("config_update", await Config.getConfig());
+        }}
+        className={`p-1 font-mono text-sm rounded border bg-zinc-800 text-white outline-none focus:ring-0 resize-y ${error ? "border-red-500" : ""}`}
+      />
+      {error && <span className="text-sm text-red-500">Invalid JSON, UUID or Minecraft username</span>}
+    </div>
+  );
+};
 
 export const Configuration = () => {
   const { value: showOnlyTalkingUsers } = useConfigValue("showOnlyTalkingUsers");
@@ -216,6 +262,7 @@ export const Configuration = () => {
           }}
         />
       </div>
+      <McUserMapEditor />
     </div>
   );
 };

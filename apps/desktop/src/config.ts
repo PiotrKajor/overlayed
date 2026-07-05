@@ -23,6 +23,8 @@ export interface OverlayedConfig {
   maxUsernameLength: number;
   userScale: number;
   hideTaskbarWhenPinned: boolean;
+  /** Discord user id -> Minecraft UUID or username, avatar swapped to the skin head via mc-heads.net */
+  mcUserMap: Record<string, string>;
 }
 
 export type OverlayedConfigKey = keyof OverlayedConfig;
@@ -41,6 +43,7 @@ export const DEFAULT_OVERLAYED_CONFIG: OverlayedConfig = {
   maxUsernameLength: 40,
   userScale: 100,
   hideTaskbarWhenPinned: false,
+  mcUserMap: {},
 };
 
 const CONFIG_FILE_NAME = "config.json";
